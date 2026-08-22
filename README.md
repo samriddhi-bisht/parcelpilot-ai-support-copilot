@@ -24,6 +24,10 @@ These sources are not equally reliable:
 
 ParcelPilot Control Desk addresses these concerns through deterministic business rules, source-aware retrieval, tool-level access control, visible evidence, and confirmation-gated actions.
 
+## System Architecture
+
+![Architecture](docs/architecture-diagram.png)
+
 ## Core Capabilities
 
 ### Support Assistant
