@@ -18,3 +18,5 @@ Thumbs.db
 # Runtime data
 runtime/
 *.log
+
+printf "\ndata/actions/pending_actions.json\ndata/actions/completed_actions.json\n" >> .gitignore
