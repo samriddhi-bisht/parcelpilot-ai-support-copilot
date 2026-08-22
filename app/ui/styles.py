@@ -391,6 +391,87 @@ def apply_styles() -> None:
             font-weight: 650;
         }
 
+        .radar-card {
+    background: #FFFFFF;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 1rem 1.05rem;
+    margin-bottom: 0.75rem;
+}
+
+.radar-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.radar-ticket {
+    color: var(--navy);
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.radar-account {
+    color: var(--muted);
+    font-size: 0.74rem;
+    margin-top: 0.12rem;
+}
+
+.radar-badges {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.radar-subject {
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-top: 0.75rem;
+}
+
+.radar-detail {
+    color: var(--muted);
+    font-size: 0.76rem;
+    margin-top: 0.4rem;
+}
+
+.radar-workaround {
+    background: #F4F7F8;
+    border-left: 3px solid var(--teal);
+    color: var(--slate);
+    font-size: 0.78rem;
+    margin-top: 0.65rem;
+    padding: 0.55rem 0.7rem;
+}
+
+.risk-critical,
+.risk-warning,
+.risk-normal {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 0.22rem 0.58rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.risk-critical {
+    background: #FCE8E8;
+    color: #A33838;
+}
+
+.risk-warning {
+    background: #FFF4D8;
+    color: #84621A;
+}
+
+.risk-normal {
+    background: var(--teal-soft);
+    color: var(--teal-dark);
+}
+
         #MainMenu {
             visibility: hidden;
         }

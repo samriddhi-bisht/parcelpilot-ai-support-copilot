@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from app.services.insight_service import ParcelPilotInsightService
 
 import pandas as pd
 import streamlit as st
@@ -44,6 +45,17 @@ def load_data_service() -> ParcelPilotDataService:
 def load_document_service() -> ParcelPilotDocumentService:
     return ParcelPilotDocumentService()
 
+@st.cache_resource
+def load_insight_service() -> ParcelPilotInsightService:
+    data_service = load_data_service()
+    support_tools = ParcelPilotSupportTools(
+        data_service=data_service
+    )
+
+    return ParcelPilotInsightService(
+        data_service=data_service,
+        support_tools=support_tools,
+    )
 
 @st.cache_resource
 def load_agent() -> ParcelPilotAgent:
@@ -112,9 +124,13 @@ def render_sidebar(
     )
 
     workspace = st.sidebar.radio(
-        "Workspace",
-        options=["Assistant", "Source Library"],
-    )
+    "Workspace",
+    options=[
+        "Assistant",
+        "Operations Radar",
+        "Source Library",
+    ],
+)
 
     role = st.sidebar.selectbox(
         "Access context",
@@ -622,6 +638,258 @@ def render_source_library(
             hide_index=True,
         )
 
+def render_risk_badge(
+    text: str,
+    badge_type: str,
+) -> str:
+    class_name = {
+        "critical": "risk-critical",
+        "warning": "risk-warning",
+        "normal": "risk-normal",
+    }.get(badge_type, "risk-normal")
+
+    return (
+        f'<span class="{class_name}">{text}</span>'
+    )
+
+
+def render_operations_radar(
+    insight_service: ParcelPilotInsightService,
+    role: str,
+) -> None:
+    if role == CUSTOMER_ROLE:
+        st.error(
+            "Operations Radar is available only to authorised "
+            "ParcelPilot support and operations users."
+        )
+        return
+
+    st.markdown(
+        """
+        <div class="context-bar">
+            Proactive issue detection across current support and
+            operational activity
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    summary = insight_service.dashboard_summary()
+
+    metric_columns = st.columns(5)
+
+    metric_columns[0].metric(
+        "Open tickets",
+        summary["open_tickets"],
+    )
+    metric_columns[1].metric(
+        "P1 tickets",
+        summary["p1_tickets"],
+    )
+    metric_columns[2].metric(
+        "SLA breaches",
+        summary["sla_breaches"],
+    )
+    metric_columns[3].metric(
+        "Escalation required",
+        summary["requires_escalation"],
+    )
+    metric_columns[4].metric(
+        "Issue groups",
+        summary["recurring_issue_groups"],
+    )
+
+    urgent_tab, patterns_tab, known_tab, carrier_tab = st.tabs(
+        [
+            "Urgent queue",
+            "Recurring patterns",
+            "Known issue matches",
+            "Carrier signals",
+        ]
+    )
+
+    with urgent_tab:
+        urgent_items = insight_service.urgent_queue()
+
+        if not urgent_items:
+            st.success(
+                "No tickets currently require immediate escalation."
+            )
+        else:
+            for item in urgent_items:
+                severity_badge = render_risk_badge(
+                    item["severity"],
+                    (
+                        "critical"
+                        if item["severity"] == "P1"
+                        else "warning"
+                    ),
+                )
+
+                breach_badge = render_risk_badge(
+                    (
+                        "SLA breached"
+                        if item["sla_breached"]
+                        else "Within SLA"
+                    ),
+                    (
+                        "critical"
+                        if item["sla_breached"]
+                        else "normal"
+                    ),
+                )
+
+                st.markdown(
+                    f"""
+                    <div class="radar-card">
+                        <div class="radar-card-header">
+                            <div>
+                                <div class="radar-ticket">
+                                    {item['ticket_id']}
+                                </div>
+                                <div class="radar-account">
+                                    {item['account_name']}
+                                </div>
+                            </div>
+                            <div class="radar-badges">
+                                {severity_badge}
+                                {breach_badge}
+                            </div>
+                        </div>
+                        <div class="radar-subject">
+                            {item['subject']}
+                        </div>
+                        <div class="radar-detail">
+                            Response target:
+                            {item['target_display']}
+                            &nbsp; | &nbsp;
+                            Current age:
+                            {item['age_minutes']} minutes
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+    with patterns_tab:
+        patterns = insight_service.detect_recurring_issues()
+
+        if not patterns:
+            st.info(
+                "No recurring issue patterns were detected."
+            )
+        else:
+            rows = []
+
+            for item in patterns:
+                rows.append(
+                    {
+                        "Issue pattern": item["issue"],
+                        "Tickets": item["ticket_count"],
+                        "Affected accounts": item[
+                            "affected_account_count"
+                        ],
+                        "Cross-customer": (
+                            "Yes"
+                            if item["cross_customer"]
+                            else "No"
+                        ),
+                        "Accounts": ", ".join(
+                            item["affected_accounts"]
+                        ),
+                    }
+                )
+
+            st.dataframe(
+                pd.DataFrame(rows),
+                use_container_width=True,
+                hide_index=True,
+            )
+
+            for item in patterns:
+                with st.expander(
+                    (
+                        f"{item['issue']} "
+                        f"({item['ticket_count']} tickets)"
+                    )
+                ):
+                    for ticket in item["tickets"]:
+                        st.markdown(
+                            f"**{ticket['ticket_id']}** — "
+                            f"{ticket['account_name']}  \n"
+                            f"{ticket['subject']}"
+                        )
+
+    with known_tab:
+        known_matches = (
+            insight_service.detect_known_issue_matches()
+        )
+
+        if not known_matches:
+            st.info(
+                "No open tickets currently match known issues."
+            )
+        else:
+            for item in known_matches:
+                st.markdown(
+                    f"""
+                    <div class="radar-card">
+                        <div class="radar-card-header">
+                            <div>
+                                <div class="radar-ticket">
+                                    {item['ticket_id']}
+                                </div>
+                                <div class="radar-account">
+                                    {item['account_name']}
+                                </div>
+                            </div>
+                            <div>
+                                {render_risk_badge(
+                                    item['known_issue_id'],
+                                    'warning'
+                                )}
+                            </div>
+                        </div>
+                        <div class="radar-subject">
+                            {item['subject']}
+                        </div>
+                        <div class="radar-detail">
+                            Matched:
+                            {item['known_issue_title']}
+                            &nbsp; | &nbsp;
+                            Status:
+                            {item['known_issue_status']}
+                        </div>
+                        <div class="radar-workaround">
+                            Recommended workaround:
+                            {item['workaround']}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+    with carrier_tab:
+        carrier_summary = (
+            insight_service.carrier_issue_summary()
+        )
+
+        if not carrier_summary:
+            st.info(
+                "No carrier-fault signals were found."
+            )
+        else:
+            st.dataframe(
+                pd.DataFrame(carrier_summary),
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "carrier": "Carrier",
+                    "carrier_fault_orders": (
+                        "Orders with carrier fault"
+                    ),
+                },
+            )
 
 def main() -> None:
     initialise_session_state()
@@ -644,6 +912,11 @@ def main() -> None:
             data_service=data_service,
             role=role,
             account_id=account_id,
+        )
+    elif workspace == "Operations Radar":
+        render_operations_radar(
+            insight_service=load_insight_service(),
+            role=role,
         )
     else:
         render_source_library(
