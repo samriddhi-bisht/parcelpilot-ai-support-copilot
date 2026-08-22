@@ -1,0 +1,13 @@
+[
+  {
+    "action_id": "ESC-EE72ED7C",
+    "action_type": "ticket_escalation",
+    "ticket_id": "TKT-501",
+    "account_id": "ACCT-001",
+    "reason": "Requested through support workspace. Severity: P1. Applicable first-response target is breached. User request: Escalate TKT-501 because it is a production outage.",
+    "requested_by": "Support Operations",
+    "status": "created",
+    "prepared_at": "2026-08-23T00:11:23",
+    "confirmed_at": "2026-08-23T00:11:37"
+  }
+]
