@@ -270,6 +270,26 @@ def apply_styles() -> None:
             min-height: 2.55rem;
         }
 
+        /* Sidebar secondary buttons (Start new conversation) */
+[data-testid="stSidebar"] .stButton > button {
+    background: #FFFFFF !important;
+    color: #17202B !important;
+    border: 1px solid #CBD4DE !important;
+    font-weight: 600;
+}
+
+[data-testid="stSidebar"] .stButton > button:hover {
+    background: #F5F7FA !important;
+    color: #17202B !important;
+    border: 1px solid #AEB8C4 !important;
+}
+
+[data-testid="stSidebar"] .stButton > button p,
+[data-testid="stSidebar"] .stButton > button span,
+[data-testid="stSidebar"] .stButton > button div {
+    color: #17202B !important;
+}
+
         .stButton > button:hover {
             background: var(--navy-soft);
             border-color: var(--navy-soft);
